@@ -1,8 +1,12 @@
 #!/usr/bin/env python
 """
 cmd module
-authors: stanbaek
-Created on 2010-07-07:
+authors: stanbaek, apullin
+
+Modifications and additions to this file made by Andrew Pullin are copyright, 2013
+Copyrights are acknowledged for portions of this code extant before modifications by Andrew Pullin 
+Any application of BSD or other license to copyright content without the authors express approval
+is invalid and void.
 
 """
 
@@ -61,31 +65,13 @@ SOFTWARE_RESET     =        0x88
 SPECIAL_TELEMETRY  =        0x89
 ERASE_SECTORS      =        0x8A
 FLASH_READBACK     =        0x8B
-SET_VEL_PROFILE =           0x8C
-WHO_AM_I =                  0x8D
-START_TELEM =               0x8E
-ZERO_POS =                  0x8F
+SLEEP              =        0x8C
+SET_VEL_PROFILE =           0x8D
+WHO_AM_I =                  0x8E
+START_TELEM =               0x8F
+ZERO_POS =                  0x90
+SET_HALL_GAINS =            0x91
+SET_TAIL_QUEUE =            0x92
+SET_TAIL_GAINS =            0x93
 
 # CMD values of 0xF0(240) - 0xFF(255) are reserved for future use
-
-"""
-CMD_DCUPDATE = 101
-CMD_DCSWEEP = 106
-CMD_DIRDCUPDATE = 110
-CMD_STEERUPDATE = 102
-CMD_TURNLEFT = chr(103)
-CMD_TURNRIGHT = chr(104)
-CMD_NOTURN = chr(105)
-CMD_DIRECTION = 107
-CMD_DIRFORWARD = chr(108)
-CMD_DIRBACKWARD = chr(109)
-CMD_WIIMOTE = 121
-CMD_WIIREAD = 122
-CMD_WIICONTREAD = 123
-CMD_WIIBLOBREAD = 124
-CMD_AUTOPILOT = 131
-CMD_SETGAINS = 141
-"""
-
-
-
