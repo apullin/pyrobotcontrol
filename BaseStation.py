@@ -20,10 +20,16 @@ from lib import command
 import serial
 from scan import *
 from xbee import XBee
+from struct import unpack
 
 class BaseStation(object):
 
-    def __init__(self, port, baudrate, channel = None, PANid = None, base_addr = None, callbackfn = None):
+    api_frame = 'A'
+    pendingAT = False
+
+    def __init__(self, port, baudrate, channel = None, PANid = None, base_addr = None, callbackfn = None, verbose = False):
+        
+        self.verbose = verbose
         
         try:
             self.ser = serial.Serial(port, baudrate, timeout = 1)
@@ -38,18 +44,21 @@ class BaseStation(object):
             print "Check your BaseStation declaration --OR--"
             print " you may need to change the port in shared.py"
             sys.exit() #force exit
-            
-        print "serial open"
+        
+        if verbose:
+            print "serial open"
             
         self.ser.writeTimeout = 5
 
         #Set up callback
-        if callbackfn == None:
+        if callbackfn == 'sync':
             self.xb = XBee(self.ser)   #Synchronous mode, not used by BML!
-            print "Set up xbee object in synchronous mode."
-        else:
-            self.xb = XBee(self.ser, callback = callbackfn)
-            print "Set up xbee object in async mode."
+            if verbose:
+                print "Set up xbee object in synchronous mode."
+        elif callbackfn == None:
+            self.xb = XBee(self.ser, callback = self.xbee_received)
+            if verbose:
+                print "Set up xbee object in async mode."
 
     def close(self):
         try:
@@ -65,40 +74,100 @@ class BaseStation(object):
         time.sleep(0.1)
         
     def sendAT(self, command, parameter = None, frame_id = None):
+    #TODO: This logic may not be correct. Need to sort out condition where frame id and parameters are used
         if parameter is not None:
             if frame_id is not None:
                 self.xb.at(frame_id = frame_id, command = command, parameter = parameter)
             else:
                 self.xb.at(command = command, parameter = parameter)
-        elif frame_id is not None:
+        elif frame_id is not None: # expects an AT response
             self.xb.at(frame_id = frame_id, command = command)
+            #Since an AT response is expected, this function will busy wait here for the AT response
+            self.ATwait()
         else:
             self.xb.at(command = command)
 
-
     def read(self):
         packet = self.xb.wait_read_frame()
-
         return packet
 
-    def getChannel(self, frame_id):
-        self.sendAT(command='CH',frame_id=frame_id)
+    def getChannel(self):
+        self.incremetAPIFrame()
+        self.sendAT(command='CH', frame_id = self.api_frame)
+        return self.atResponseParam
 
-    def setChannel(self, param, frame_id = None):
-        self.sendAT(command='CH',parameter=param,frame_id = frame_id)
+    def setChannel(self, param):
+        self.incremetAPIFrame()
+        self.sendAT(command='CH', parameter=param, frame_id = self.api_frame)
 
-    def getPanID(self, frame_id):
-        self.sendAT(command='ID',frame_id=frame_id)
+    def getPanID(self):
+        self.incremetAPIFrame()
+        self.sendAT(command='ID', frame_id = self.api_frame)
+        return self.atResponseParam
         
-    def setPanID(self, param, frame_id = None):
-        self.sendAT(command='ID',parameter=param,frame_id = frame_id)
+    def setPanID(self, param):
+        self.incremetAPIFrame()
+        self.sendAT(command='ID', parameter=param, frame_id = self.api_frame)
         
-    def getSrcAddr(self, frame_id):
-        self.sendAT(command='MY',frame_id=frame_id)
+    def getSrcAddr(self):
+        self.incremetAPIFrame()
+        self.sendAT(command='MY', frame_id = self.api_frame)
+        return self.atResponseParam
         
-    def setSrcAddr(self, param, frame_id = None):
-        self.sendAT(command='MY',parameter=param,frame_id = frame_id)
+    def setSrcAddr(self, param):
+        self.incremetAPIFrame()
+        self.sendAT(command='MY',parameter=param, frame_id = self.api_frame)
 
-    def getLastAckd(self, frame_id):
-        self.sendAT(command='EA',frame_id=frame_id)
+    def getLastAckd(self):
+        self.incremetAPIFrame()
+        self.sendAT(command='EA', frame_id = self.api_frame)
+        return self.atResponseParam
+        
+    def incremetAPIFrame(self):
+        api_frame = chr( ord(self.api_frame) + 1 )  #increment API frame
+        
+    def ATwait(self):
+        self.pendingAT = True
+        self.atResponseParam = None
+        while self.pendingAT:
+            time.sleep(0.01)
+        
+        
+    #Define functions to use
+    def xbee_received(self, packet):
+        #Check type of packet:
+        name = packet.get('id')
+        #The packet is a response to an AT command
+        if name == 'at_response':
+            
+            frame_id = packet.get('frame_id')
+            command = packet.get('command')
+            status = packet.get('status')
+            parameter = packet.get('parameter')
+            if len(parameter)  == 1:
+                param_num = unpack('>b',parameter)[0]
+            else:
+                param_num = unpack('>h',parameter)[0]
+            
+            self.atResponseParam = param_num
+            
+            #Handle packet in whatever way is appropriate
+            if self.verbose:
+                print "Got AT response"
+                print "command = ",command
+                print "length = ",len(parameter)  
+                print "status = ",ord(status)
+                print "param = 0x%X" % param_num
 
+            #Once all processing done, clear pendingAT flag
+            self.pendingAT = False
+            
+        #The packet is data received from the radio
+        elif name == 'rx':
+            if self.verbose:
+                print "Got RX"
+            src_addr = packet.get('source_addr')
+            rssi = packet.get('rssi')
+            options = packet.get('options')
+            data = packet.get('rf_data')
+            #Handle packet in whatever way is appropriate
