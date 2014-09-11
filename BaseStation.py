@@ -75,17 +75,25 @@ class BaseStation(object):
         
     def sendAT(self, command, parameter = None, frame_id = None):
     #TODO: This logic may not be correct. Need to sort out condition where frame id and parameters are used
-        if parameter is not None:
-            if frame_id is not None:
-                self.xb.at(frame_id = frame_id, command = command, parameter = parameter)
-            else:
-                self.xb.at(command = command, parameter = parameter)
-        elif frame_id is not None: # expects an AT response
-            self.xb.at(frame_id = frame_id, command = command)
-            #Since an AT response is expected, this function will busy wait here for the AT response
-            self.ATwait()
+        if frame_id is None:
+            #Send with no wait
+            self.xb.at(frame_id = frame_id, command = command, parameter = parameter)
         else:
-            self.xb.at(command = command)
+            #send with wait
+            self.xb.at(frame_id = frame_id, command = command, parameter = parameter)
+            self.ATwait()
+            
+        #if parameter is not None:
+        #    if frame_id is not None:
+        #        self.xb.at(frame_id = frame_id, command = command, parameter = parameter)
+        #    else:
+        #        self.xb.at(command = command, parameter = parameter)
+        #elif frame_id is not None: # expects an AT response
+        #    self.xb.at(frame_id = frame_id, command = command)
+            #Since an AT response is expected, this function will busy wait here for the AT response
+        #    self.ATwait()
+        #else:
+        #    self.xb.at(command = command)
 
     def read(self):
         packet = self.xb.wait_read_frame()
@@ -139,25 +147,32 @@ class BaseStation(object):
         name = packet.get('id')
         #The packet is a response to an AT command
         if name == 'at_response':
-            
             frame_id = packet.get('frame_id')
             command = packet.get('command')
             status = packet.get('status')
             parameter = packet.get('parameter')
-            if len(parameter)  == 1:
-                param_num = unpack('>b',parameter)[0]
+            if parameter is not None: #responses can have no parameter
+                if len(parameter)  == 1:
+                    param_num = unpack('>B',parameter)[0]
+                else:
+                    param_num = unpack('>H',parameter)[0]
+                self.atResponseParam = param_num
             else:
-                param_num = unpack('>h',parameter)[0]
+                self.atResponseParam = None
             
-            self.atResponseParam = param_num
             
             #Handle packet in whatever way is appropriate
             if self.verbose:
                 print "Got AT response"
                 print "command = ",command
-                print "length = ",len(parameter)  
+                if parameter is not None:
+                    print "length = ",len(parameter)
+                    print "param = 0x%X" % param_num
+                else:
+                    print "length = 0 (no parameter)"
+                    print "param = None"
                 print "status = ",ord(status)
-                print "param = 0x%X" % param_num
+                
 
             #Once all processing done, clear pendingAT flag
             self.pendingAT = False

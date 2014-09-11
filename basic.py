@@ -21,6 +21,8 @@ if __name__ == '__main__':
     
     print "Type Ctrl+C to exit at any time."
     
+    print "Initial settings:"
+    print "-----------------"
     chan = xb.getChannel()
     print "xbee CHAN : 0x%x" % chan
     src = xb.getSrcAddr()
@@ -28,13 +30,24 @@ if __name__ == '__main__':
     pan = xb.getPanID()
     print "xbee PAN ID : 0x%x" % pan
     
-    #base.setChannel('\x17')
-
-    #robot.go(40)
+    # Change xbee settings
+    print "\n"
+    print " -- changing xbee CHAN to 0xe"
+    xb.setChannel('\x0e')
+    print " -- changing xbee SRC to 0x1234"
+    xb.setSrcAddr('\x12\x34')
+    print " -- changing xbee PAN to 0x9999"
+    xb.setPanID('\x99\x99')
     
-    #time.sleep(1)
-    
-    #robot.stop()
+    print "\n"
+    print "Changed settings readback:"
+    print "--------------------------"
+    chan = xb.getChannel()
+    print "xbee CHAN : 0x%x" % chan
+    src = xb.getSrcAddr()
+    print "xbee SRC addr : 0x%x" % src
+    pan = xb.getPanID()
+    print "xbee PAN ID : 0x%x" % pan
     
     while True:
         try:
