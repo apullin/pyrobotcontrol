@@ -16,17 +16,17 @@ Brining in functions from base_functions to create a unified Basestation class.
 
 
 import time, os, sys
-import command 
+from lib import command
 import serial
 from scan import *
 from xbee import XBee
 
 class BaseStation(object):
 
-    def __init__(self, port, baud, channel = None, PANid = None, base_addr = None, call_back = None):
+    def __init__(self, port, baudrate, channel = None, PANid = None, base_addr = None, callbackfn = None):
         
         try:
-            self.ser = serial.Serial(port, baud, timeout = 1)
+            self.ser = serial.Serial(port, baudrate, timeout = 1)
         except serial.SerialException:
             print
             print "Could not open serial port:",port
@@ -44,10 +44,12 @@ class BaseStation(object):
         self.ser.writeTimeout = 5
 
         #Set up callback
-        if call_back == None:
-            self.xb = XBee(self.ser)   #Snchronous mode, not used by BML!
+        if callbackfn == None:
+            self.xb = XBee(self.ser)   #Synchronous mode, not used by BML!
+            print "Set up xbee object in synchronous mode."
         else:
-            self.xb = XBee(self.ser, callback = call_back)
+            self.xb = XBee(self.ser, callback = callbackfn)
+            print "Set up xbee object in async mode."
 
     def close(self):
         try:
@@ -80,23 +82,23 @@ class BaseStation(object):
         return packet
 
     def getChannel(self, frame_id):
-        self.bs.sendAT(command='CH',frame_id=frame_id)
+        self.sendAT(command='CH',frame_id=frame_id)
 
     def setChannel(self, param, frame_id = None):
-        self.bs.sendAT(command='CH',parameter=param,frame_id = frame_id)
+        self.sendAT(command='CH',parameter=param,frame_id = frame_id)
 
     def getPanID(self, frame_id):
-        self.bs.sendAT(command='ID',frame_id=frame_id)
+        self.sendAT(command='ID',frame_id=frame_id)
         
     def setPanID(self, param, frame_id = None):
-        self.bs.sendAT(command='ID',parameter=param,frame_id = frame_id)
+        self.sendAT(command='ID',parameter=param,frame_id = frame_id)
         
     def getSrcAddr(self, frame_id):
-        self.bs.sendAT(command='MY',frame_id=frame_id)
+        self.sendAT(command='MY',frame_id=frame_id)
         
     def setSrcAddr(self, param, frame_id = None):
-        self.bs.sendAT(command='MY',parameter=param,frame_id = frame_id)
+        self.sendAT(command='MY',parameter=param,frame_id = frame_id)
 
     def getLastAckd(self, frame_id):
-        self.bs.sendAT(command='EA',frame_id=frame_id)
+        self.sendAT(command='EA',frame_id=frame_id)
 

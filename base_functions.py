@@ -19,7 +19,7 @@ the basestation
 """
 
 import time, os, sys
-import command
+from lib import command
 from struct import *
 
 class BaseFunctions(object):
@@ -30,24 +30,24 @@ class BaseFunctions(object):
     def close(self):
         self.bs.close()
 
-    def getChannel(self, frame_id):
+    def getChannel(self, frame_id = None):
         self.bs.sendAT(command='CH',frame_id=frame_id)
 
     def setChannel(self, param, frame_id = None):
         self.bs.sendAT(command='CH',parameter=param,frame_id = frame_id)
 
-    def getPanID(self, frame_id):
+    def getPanID(self, frame_id = None):
         self.bs.sendAT(command='ID',frame_id=frame_id)
         
     def setPanID(self, param, frame_id = None):
         self.bs.sendAT(command='ID',parameter=param,frame_id = frame_id)
         
-    def getSrcAddr(self, frame_id):
+    def getSrcAddr(self, frame_id = None):
         self.bs.sendAT(command='MY',frame_id=frame_id)
         
     def setSrcAddr(self, param, frame_id = None):
         self.bs.sendAT(command='MY',parameter=param,frame_id = frame_id)
 
-    def getLastAckd(self, frame_id):
+    def getLastAckd(self, frame_id = None):
         self.bs.sendAT(command='EA',frame_id=frame_id)
 

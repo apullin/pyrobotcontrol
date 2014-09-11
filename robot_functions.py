@@ -14,7 +14,7 @@ the class BaseFunctions
 """
 
 import time, os, sys
-import command
+from lib import command
 from struct import *
 
 class RobotFunctions(object):
