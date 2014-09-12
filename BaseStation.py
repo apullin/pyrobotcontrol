@@ -77,10 +77,17 @@ class BaseStation(object):
     #TODO: This logic may not be correct. Need to sort out condition where frame id and parameters are used
         if frame_id is None:
             #Send with no wait
-            self.xb.at(frame_id = frame_id, command = command, parameter = parameter)
-        else:
+            if parameter is not None:
+                self.xb.at(command = command, parameter = parameter)
+            else:
+                self.xb.at(command = command)
+        else: #use frame_id
             #send with wait
-            self.xb.at(frame_id = frame_id, command = command, parameter = parameter)
+            if parameter is not None:
+                self.xb.at(frame_id = frame_id, command = command, parameter = parameter)
+            else:
+                self.xb.at(frame_id = frame_id, command = command)
+            
             self.ATwait()
             
         #if parameter is not None:
@@ -131,6 +138,10 @@ class BaseStation(object):
         self.sendAT(command='EA', frame_id = self.api_frame)
         return self.atResponseParam
         
+    def writeParams(self):
+        self.incremetAPIFrame()
+        self.sendAT(command='WR', frame_id = self.api_frame)
+        
     def incremetAPIFrame(self):
         api_frame = chr( ord(self.api_frame) + 1 )  #increment API frame
         
@@ -138,7 +149,7 @@ class BaseStation(object):
         self.pendingAT = True
         self.atResponseParam = None
         while self.pendingAT:
-            time.sleep(0.01)
+            pass
         
         
     #Define functions to use

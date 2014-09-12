@@ -39,9 +39,8 @@ def main():
     R1.query( retries = 8 )
     
     #Verify all robots can be queried
-    verifyAllQueried()  #exits on failure
+    verifyAllQueried(ROBOTS)  #exits on failure
 
-    
     #Motor gains format:
     #  [ Kp , Ki , Kd , Kaw , Kff     ,  Kp , Ki , Kd , Kaw , Kff ]
     #    ----------LEFT----------        ---------_RIGHT----------
@@ -51,7 +50,7 @@ def main():
 
     R1.setMotorGains(motorgains, retries = 8)
     #Verify all robots have motor gains set
-    verifyAllMotorGainsSet()   #exits on failure
+    verifyAllMotorGainsSet(ROBOTS)   #exits on failure
 
     #Steering gains format:
     #  [ Kp , Ki , Kd , Kaw , Kff]

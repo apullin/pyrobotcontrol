@@ -59,9 +59,9 @@ class Robot:
     robot_queried = False
     flash_erased = False
     robot_awake = True
-    motorGains = [0,0,0,0,0, 0,0,0,0,0]
+    motorGains = [0,0,0,0,0, 0,0,0,0,0] #TODO, change motor gains to 4x list
     steeringGains = [0,0,0,0,0]
-    tailGains = [0,0,0,0,0]
+    tailGains = [0,0,0,0,0]             #TODO, move to derivative robot classes
     angRateDeg = 0;
     angRate = 0;
     dataFileName = ''
@@ -70,15 +70,27 @@ class Robot:
     telemSampleFreq = 1000
     VERBOSE = True
     telemFormatString = '%d,' + '%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%f'
+    DEST_ADDR = None
+    PAN_ID = None
+    CHANNEL = None
     
-    def __init__(self, address, xb):
-        self.DEST_ADDR = address
-        self.DEST_ADDR_int = unpack('>h',self.DEST_ADDR)[0] #address as integer
-        self.xb = xb
-        print "Robot with DEST_ADDR = 0x%02X " % self.DEST_ADDR_int
+    def __init__(self, dest_addr, pan_id = None, channel = None, basestation = xb):
+        #DEST_ADDR is stricly required to construct a robot object
+        self.DEST_ADDR = dest_addr
+        self.DEST_ADDR_int = unpack('>H',self.DEST_ADDR)[0] #DEST addr as integer
+        
+        if pan_id is not None:
+            self.PAN_ID = pan_id
+            self.PAN_ID_int = unpack('>H',self.PAN_ID)[0] #PAN ID as integer
+        if channel is not None:
+            self.CHANNEL = channel
+            self.CHANNEL_int = ord(self.CHANNEL)
+            
+        self.basestation = xb
+        print "Robot with DEST_ADDR = 0x%04X " % self.DEST_ADDR_int
     
     def clAnnounce(self):
-        print "DST: 0x%02X | " % self.DEST_ADDR_int,
+        print "DST: 0x%04X | " % self.DEST_ADDR_int,
     
     def tx(self, status, type, data):
         payload = chr(status) + chr(type) + ''.join(data)
