@@ -49,6 +49,10 @@ if __name__ == '__main__':
     pan = xb.getPanID()
     print "xbee PAN ID : 0x%x" % pan
     
+    print "\n"
+    print "Writing settings to xbee storage."
+    xb.writeParams()
+    
     while True:
         try:
             time.sleep(0.1)
