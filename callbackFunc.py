@@ -10,7 +10,7 @@ is invalid and void.
 
 from lib import command
 from struct import pack,unpack
-import time, sys
+import time, sys, traceback
 
 import shared
 
@@ -193,9 +193,12 @@ def xbee_received(packet):
     
     except Exception as args:
         print "\nGeneral exception from callbackfunc:",args
-        print "Attemping to exit cleanly..."
+        print "\n    ******    TRACEBACK    ******    "
+        traceback.print_exc()
+        print "    *****************************    \n"
+        print "Attempting to exit cleanly..."
         shared.xb.halt()
-        sharedser.close()
+        shared.ser.close()
         sys.exit()
 
 

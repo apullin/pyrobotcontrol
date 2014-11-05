@@ -15,7 +15,7 @@ Brining in functions from base_functions to create a unified Basestation class.
 """
 
 
-import time, os, sys
+import time, os, sys, traceback
 from lib import command
 import serial
 from scan import *
@@ -27,7 +27,7 @@ class BaseStation(object):
     api_frame = 'A'
     pendingAT = False
 
-    def __init__(self, port, baudrate, channel = None, PANid = None, base_addr = None, callbackfn = None, verbose = False):
+    def __init__(self, port, baudrate, channel = None, PANid = None, base_addr = None, verbose = False):
         
         self.verbose = verbose
         
@@ -51,14 +51,7 @@ class BaseStation(object):
         self.ser.writeTimeout = 5
 
         #Set up callback
-        if callbackfn == 'sync':
-            self.xb = XBee(self.ser)   #Synchronous mode, not used by BML!
-            if verbose:
-                print "Set up xbee object in synchronous mode."
-        elif callbackfn == None:
-            self.xb = XBee(self.ser, callback = self.xbee_received)
-            if verbose:
-                print "Set up xbee object in async mode."
+        self.xb = XBee(self.ser, callback = self.xbee_received)
 
     def close(self):
         try:
@@ -154,46 +147,59 @@ class BaseStation(object):
         
     #Define functions to use
     def xbee_received(self, packet):
-        #Check type of packet:
-        name = packet.get('id')
-        #The packet is a response to an AT command
-        if name == 'at_response':
-            frame_id = packet.get('frame_id')
-            command = packet.get('command')
-            status = packet.get('status')
-            parameter = packet.get('parameter')
-            if parameter is not None: #responses can have no parameter
-                if len(parameter)  == 1:
-                    param_num = unpack('>B',parameter)[0]
+        try:
+            #Check type of packet:
+            name = packet.get('id')
+            #The packet is a response to an AT command
+            if name == 'at_response':
+                frame_id = packet.get('frame_id')
+                command = packet.get('command')
+                status = packet.get('status')
+                parameter = packet.get('parameter')
+                if parameter is not None: #responses can have no parameter
+                    if len(parameter)  == 1:
+                        param_num = unpack('>B',parameter)[0]
+                    else:
+                        param_num = unpack('>H',parameter)[0]
+                    self.atResponseParam = param_num
                 else:
-                    param_num = unpack('>H',parameter)[0]
-                self.atResponseParam = param_num
-            else:
-                self.atResponseParam = None
-            
-            
-            #Handle packet in whatever way is appropriate
-            if self.verbose:
-                print "Got AT response"
-                print "command = ",command
-                if parameter is not None:
-                    print "length = ",len(parameter)
-                    print "param = 0x%X" % param_num
-                else:
-                    print "length = 0 (no parameter)"
-                    print "param = None"
-                print "status = ",ord(status)
+                    self.atResponseParam = None
                 
+                
+                #Handle packet in whatever way is appropriate
+                if self.verbose:
+                    print "Got AT response"
+                    print "command = ",command
+                    if parameter is not None:
+                        print "length = ",len(parameter)
+                        print "param = 0x%X" % param_num
+                    else:
+                        print "length = 0 (no parameter)"
+                        print "param = None"
+                    print "status = ",ord(status)
+                    
 
-            #Once all processing done, clear pendingAT flag
-            self.pendingAT = False
-            
-        #The packet is data received from the radio
-        elif name == 'rx':
-            if self.verbose:
+                #Once all processing done, clear pendingAT flag
+                self.pendingAT = False
+                
+            #The packet is data received from the radio
+            elif name == 'rx':
                 print "Got RX"
-            src_addr = packet.get('source_addr')
-            rssi = packet.get('rssi')
-            options = packet.get('options')
-            data = packet.get('rf_data')
-            #Handle packet in whatever way is appropriate
+                src_addr = packet.get('source_addr')
+                rssi = packet.get('rssi')
+                options = packet.get('options')
+                data = packet.get('rf_data')
+                #if self.verbose:
+                #    print "RSSI:",rssi,"options:",options,"data:",data
+                print "RSSI:",-ord(rssi),"dBm","options:",options,"data:",data
+                #Handle packet in whatever way is appropriate
+                #TODO: Have installable dictionary of handlers here?
+        
+        except Exception as args:
+            print "\nGeneral exception from callbackfunc:",args
+            print "\n    ******    TRACEBACK    ******    "
+            traceback.print_exc()
+            print "    *****************************    \n"
+            print "Attempting to exit cleanly..."
+            self.xb.halt()
+            self.ser.close()
